@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>キッズスクリーンセーバー</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/styles.css?v=2">
+</head>
+<body>
+  <div id="app" class="app">
+    <canvas id="animCanvas" class="anim-canvas" role="presentation"></canvas>
+
+    <div class="timer" aria-label="タイマー">
+      <button id="timerBtn" class="timer-btn">⏰</button>
+      <span id="timerDisplay" class="timer-display">--:--</span>
+    </div>
+
+    <div class="hud">
+      <button id="bgmToggle" class="hud-btn">BGM OFF</button>
+    </div>
+
+    <button id="settingsBtn" class="settings-btn" aria-label="設定"></button>
+
+    <div id="toast" class="toast" aria-live="polite"></div>
+
+    <div id="longPressMenu" class="menu hidden" aria-hidden="true">
+      <div class="menu-content">
+        <button id="menuBgmToggle" class="primary">BGM トグル</button>
+        <p class="menu-hint">長押しを離すとメニューが閉じます</p>
+      </div>
+    </div>
+
+    <div id="settingsModal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content">
+        <header class="modal-header">
+          <h1>設定</h1>
+          <button id="settingsClose" class="ghost">閉じる</button>
+        </header>
+        <section id="passcodeSection">
+          <p>パスコードを入力してください</p>
+          <input id="passcodeInput" type="password" inputmode="numeric" maxlength="4" placeholder="1234">
+          <button id="passcodeSubmit" class="primary">解除</button>
+          <p class="small-hint">初期パスコード: 1234</p>
+        </section>
+        <section id="settingsContent" class="hidden">
+          <div class="field">
+            <label>自動切り替え</label>
+            <div class="pill-group" id="autoSwitchGroup"></div>
+          </div>
+          <div class="field">
+            <label>BGM</label>
+            <input id="settingsBgm" type="checkbox">
+          </div>
+          <div class="field">
+            <label>効果音</label>
+            <input id="settingsSfx" type="checkbox">
+          </div>
+          <div class="field">
+            <label>音量</label>
+            <input id="volumeSlider" type="range" min="0" max="1" step="0.05">
+          </div>
+          <div class="field">
+            <label>明るさ</label>
+            <div class="pill-group" id="brightnessGroup"></div>
+          </div>
+          <div class="field">
+            <label>背景色モード</label>
+            <div class="pill-group" id="bgModeGroup"></div>
+          </div>
+          <div class="field">
+            <label>お気に入りだけ再生</label>
+            <input id="favoritesOnly" type="checkbox">
+          </div>
+          <div class="field">
+            <label>全ての画面一覧</label>
+            <button id="openGrid" class="primary">コマ割りで見る</button>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div id="gridModal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content grid-modal-content">
+        <header class="modal-header">
+          <h1>画面一覧</h1>
+          <button id="gridClose" class="ghost">閉じる</button>
+        </header>
+        <p class="small-hint">タップするとその画面へ移動します</p>
+        <div id="gridContainer" class="grid-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="timerModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-content small-modal">
+      <header class="modal-header">
+        <h1>タイマー</h1>
+        <button id="timerClose" class="ghost">閉じる</button>
+      </header>
+      <div class="field">
+        <label>時間（分）</label>
+        <input id="timerMinutes" type="number" min="1" max="120" step="1" placeholder="5">
+      </div>
+      <div class="modal-actions">
+        <button id="timerStart" class="primary">セット</button>
+        <button id="timerStop" class="ghost">解除</button>
+      </div>
+      <p class="small-hint">セットするとカウントダウンが始まります</p>
+    </div>
+  </div>
+
+  <div id="timerDone" class="modal hidden" aria-hidden="true">
+    <div class="modal-content small-modal center timer-done-content">
+      <h1>おしまい</h1>
+      <p class="small-hint">タップまたはEnterで閉じる</p>
+    </div>
+  </div>
+
+  <script src="/app.js?v=2"></script>
+</body>
+</html>
