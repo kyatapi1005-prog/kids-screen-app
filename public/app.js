@@ -1,6 +1,25 @@
 (() => {
   const canvas = document.getElementById('animCanvas');
   const ctx = canvas.getContext('2d');
+
+  // Safari/iPad などのラウンド矩形非対応を補う
+  if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+      const radius = Array.isArray(r) ? r : [r, r, r, r].map(v => v || 0);
+      this.beginPath();
+      this.moveTo(x + radius[0], y);
+      this.lineTo(x + w - radius[1], y);
+      this.quadraticCurveTo(x + w, y, x + w, y + radius[1]);
+      this.lineTo(x + w, y + h - radius[2]);
+      this.quadraticCurveTo(x + w, y + h, x + w - radius[2], y + h);
+      this.lineTo(x + radius[3], y + h);
+      this.quadraticCurveTo(x, y + h, x, y + h - radius[3]);
+      this.lineTo(x, y + radius[0]);
+      this.quadraticCurveTo(x, y, x + radius[0], y);
+      this.closePath();
+      return this;
+    };
+  }
   const bgmToggleBtn = document.getElementById('bgmToggle');
   const toastEl = document.getElementById('toast');
   const longPressMenu = document.getElementById('longPressMenu');
@@ -177,6 +196,13 @@
   }
 
   window.addEventListener('resize', resize);
+  // 長押しのOS標準メニューを防ぐ
+  window.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+  });
+  window.addEventListener('selectstart', (e) => {
+    e.preventDefault();
+  });
   resize();
 
   const animations = buildAnimationLibrary();
@@ -761,10 +787,12 @@
 
   function generateThumbnail(anim) {
     if (anim.thumb) return anim.thumb;
+    const w = 160;
+    const h = 90;
+    const dpr = window.devicePixelRatio || 1;
+
+    // まず実際のアニメ描画を試す
     try {
-      const w = 160;
-      const h = 90;
-      const dpr = window.devicePixelRatio || 1;
       const off = document.createElement('canvas');
       const offCtx = off.getContext('2d');
       off.width = w * dpr;
@@ -774,11 +802,141 @@
       const fakeCanvas = { clientWidth: w, clientHeight: h };
       const draw = anim.create();
       draw(offCtx, fakeCanvas, 4);
-      anim.thumb = off.toDataURL('image/png');
-      return anim.thumb;
+      const url = off.toDataURL('image/png');
+      if (url && url.startsWith('data:image')) {
+        anim.thumb = url;
+        return anim.thumb;
+      }
     } catch {
-      return null;
+      // fallthrough to placeholder
     }
+
+    // Safari/iPad向けフォールバックのシンプルサムネ
+    const fallback = document.createElement('canvas');
+    const fc = fallback.getContext('2d');
+    fallback.width = w * dpr;
+    fallback.height = h * dpr;
+    fc.setTransform(1, 0, 0, 1, 0, 0);
+    fc.scale(dpr, dpr);
+
+    drawPlaceholderThumb(fc, w, h, anim.category, anim.variant);
+    anim.thumb = fallback.toDataURL('image/png');
+    return anim.thumb;
+  }
+
+  function drawPlaceholderThumb(ctx, w, h, category, variant) {
+    const palettes = {
+      space: ['#0b1026', '#14305c', '#2f6bc1'],
+      terrace: ['#1c3a2f', '#2d6b45', '#5caf6a'],
+      'horizon-drive': ['#0f1c2d', '#1d3d6b', '#4da8ff'],
+      'karaoke-wave': ['#1a0f2f', '#32285e', '#6a4bc8'],
+      text: ['#111', '#333', '#888'],
+      ocean: ['#0b2a45', '#0f4f7a', '#23a7e1'],
+      vehicles: ['#1a1a1a', '#333333', '#808080'],
+      clouds: ['#0a1a3a', '#345c9c', '#9ec8ff'],
+      numbers: ['#101010', '#303030', '#b3b3b3'],
+      alphabet: ['#101018', '#2d2d48', '#9a9ad4'],
+      photos: ['#242424', '#444', '#888'],
+      special: ['#2c1b1b', '#5c2a2a', '#f2b441'],
+    };
+    const palette = palettes[category] || ['#1a1a1a', '#333', '#777'];
+    const grad = ctx.createLinearGradient(0, 0, w, h);
+    grad.addColorStop(0, palette[0]);
+    grad.addColorStop(1, palette[1]);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // icon-ish shapes
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.fillStyle = palette[2];
+    if (category === 'space') {
+      ctx.beginPath();
+      ctx.arc(-24, -10, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(18, 6, 20, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    } else if (category === 'terrace') {
+      ctx.fillRect(-60, 10, 120, 12);
+      ctx.fillRect(-48, -4, 96, 12);
+      ctx.fillRect(-36, -18, 72, 12);
+    } else if (category === 'horizon-drive') {
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-60, 30);
+      ctx.lineTo(0, -20);
+      ctx.lineTo(60, 30);
+      ctx.stroke();
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-10, 30);
+      ctx.lineTo(0, 0);
+      ctx.lineTo(10, 30);
+      ctx.stroke();
+    } else if (category === 'karaoke-wave') {
+      ctx.strokeStyle = palette[2];
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      for (let x = -60; x <= 60; x += 8) {
+        const y = Math.sin((x / 60) * Math.PI * 2 + variant) * 14;
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    } else if (category === 'text') {
+      ctx.fillRect(-50, -25, 100, 10);
+      ctx.fillRect(-50, 5, 70, 10);
+    } else if (category === 'ocean') {
+      ctx.beginPath();
+      ctx.moveTo(-60, 10);
+      for (let x = -60; x <= 60; x += 10) {
+        const y = Math.sin(x / 20 + variant) * 6;
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(60, 30);
+      ctx.lineTo(-60, 30);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.beginPath();
+      ctx.arc(20, -4, 6, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (category === 'vehicles') {
+      ctx.fillRect(-50, 10, 100, 14);
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.fillRect(-30, -12, 60, 16);
+    } else if (category === 'clouds') {
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.beginPath();
+      ctx.arc(-20, 0, 18, 0, Math.PI * 2);
+      ctx.arc(0, -8, 16, 0, Math.PI * 2);
+      ctx.arc(20, 0, 18, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (category === 'numbers' || category === 'alphabet') {
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.font = '28px system-ui, -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const text = category === 'numbers' ? `${variant * 3 - 2}` : String.fromCharCode(64 + variant);
+      ctx.fillText(text, 0, 2);
+    } else if (category === 'photos') {
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.fillRect(-38, -24, 76, 52);
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.beginPath();
+      ctx.arc(-10, -4, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(-30, 8, 60, 8);
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.beginPath();
+      ctx.arc(0, 0, 22, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   function loop(now) {
@@ -2236,12 +2394,24 @@
     const obstacles = [];
     const items = [];
     const itemBursts = [];
+    const spawnMargin = 0.08;
     const state = {
       score: 0,
       powerUntil: 0,
       lives: 3,
       gameOver: false,
       startTime: performance.now() / 1000,
+    };
+
+    const playMissile = () => {
+      if (!settings.sfx) return;
+      synth.note(900);
+    };
+
+    const playBoom = () => {
+      if (!settings.sfx) return;
+      synth.note(320);
+      setTimeout(() => synth.note(180), 70);
     };
 
     const spawnObstacle = () => {
@@ -2251,7 +2421,7 @@
       const speed = 0.14 + Math.random() * 0.12;
       obstacles.push({
         kind,
-        x: Math.random(),
+        x: spawnMargin + Math.random() * (1 - spawnMargin * 2),
         y: -0.2,
         vy: speed,
         size,
@@ -2260,7 +2430,7 @@
 
     const spawnItem = () => {
       items.push({
-        x: Math.random(),
+        x: spawnMargin + Math.random() * (1 - spawnMargin * 2),
         y: -0.1,
         vy: 0.18,
         size: 18,
@@ -2295,6 +2465,7 @@
             vy: 0.6,
           });
         });
+        playMissile();
         return true;
       },
       down(x) {
@@ -2370,6 +2541,7 @@
             obstacles.splice(i, 1);
             missiles.splice(j, 1);
             state.score += 100;
+            playBoom();
             break;
           }
         }
