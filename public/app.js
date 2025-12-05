@@ -86,6 +86,7 @@
   let pointerUpHandler = null;
   let currentDraw = null;
   let transition = null;
+  let pointerMoved = false;
   let timerState = {
     running: false,
     endAt: 0,
@@ -418,6 +419,7 @@
   function handlePointerDown(ev) {
     ev.preventDefault();
     pointerStart = { x: ev.clientX, y: ev.clientY, time: Date.now() };
+    pointerMoved = false;
     const rect = canvas.getBoundingClientRect();
     const x = ev.clientX - rect.left;
     const y = ev.clientY - rect.top;
@@ -427,10 +429,10 @@
     }
     if (!suppressLongPress) {
       longPressTimer1 = setTimeout(() => {
-        toggleFavorite();
+        if (!pointerMoved) toggleFavorite();
       }, 1000);
       longPressTimer2 = setTimeout(() => {
-        openMenu();
+        if (!pointerMoved) openMenu();
       }, 2000);
     }
   }
@@ -501,6 +503,15 @@
   });
   canvas.addEventListener('pointermove', (ev) => {
     ev.preventDefault();
+    if (pointerStart) {
+      const dx = ev.clientX - pointerStart.x;
+      const dy = ev.clientY - pointerStart.y;
+      if (Math.abs(dx) > 18 || Math.abs(dy) > 18) {
+        pointerMoved = true;
+        clearTimeout(longPressTimer1);
+        clearTimeout(longPressTimer2);
+      }
+    }
     if (!pointerMoveHandler) return;
     const rect = canvas.getBoundingClientRect();
     const x = ev.clientX - rect.left;
