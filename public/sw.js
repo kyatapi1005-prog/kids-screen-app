@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kids-saver-v60';
+const CACHE_NAME = 'kids-saver-v62';
 const OFFLINE_ASSETS = [
   '/',
   '/index.html',

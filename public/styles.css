@@ -123,17 +123,17 @@ body {
 
 .settings-btn {
   position: absolute;
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(52px + env(safe-area-inset-bottom, 0px));
   right: calc(16px + env(safe-area-inset-right, 0px));
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.35), rgba(255, 60, 60, 0.95));
-  border: 2px solid rgba(255, 255, 255, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.5);
   border-radius: 50%;
-  box-shadow: var(--shadow);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.55), 0 0 0 2px rgba(255,255,255,0.2);
   opacity: 1;
   transition: opacity 0.2s ease, transform 0.2s ease;
-  z-index: 15;
+  z-index: 20;
 }
 
 .settings-btn:active {
