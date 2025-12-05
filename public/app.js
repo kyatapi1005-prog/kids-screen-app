@@ -25,6 +25,8 @@
   const longPressMenu = document.getElementById('longPressMenu');
   const menuBgmToggle = document.getElementById('menuBgmToggle');
   const settingsBtn = document.getElementById('settingsBtn');
+  const navPrev = document.getElementById('navPrev');
+  const navNext = document.getElementById('navNext');
   const settingsModal = document.getElementById('settingsModal');
   const settingsClose = document.getElementById('settingsClose');
   const timerContainer = document.querySelector('.timer');
@@ -452,9 +454,7 @@
       const dx = end.x - pointerStart.x;
       const dy = end.y - pointerStart.y;
       const dt = end.time - pointerStart.time;
-      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
-        nextAnimation(dx > 0 ? -1 : 1);
-      } else if (dt < 250 && Math.abs(dx) < 20 && Math.abs(dy) < 20) {
+      if (dt < 250 && Math.abs(dx) < 20 && Math.abs(dy) < 20) {
         const rect = canvas.getBoundingClientRect();
         const x = end.x - rect.left;
         const y = end.y - rect.top;
@@ -773,6 +773,9 @@
       closeGridModal();
     }
   });
+
+  if (navPrev) navPrev.addEventListener('click', () => nextAnimation(-1));
+  if (navNext) navNext.addEventListener('click', () => nextAnimation(1));
 
   document.addEventListener('keydown', (e) => {
     const tag = e.target.tagName;
