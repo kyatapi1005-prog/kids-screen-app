@@ -87,6 +87,7 @@
   let currentDraw = null;
   let transition = null;
   let pointerMoved = false;
+  let pointerCaptured = false;
   let timerState = {
     running: false,
     endAt: 0,
@@ -420,12 +421,16 @@
     ev.preventDefault();
     pointerStart = { x: ev.clientX, y: ev.clientY, time: Date.now() };
     pointerMoved = false;
+    pointerCaptured = false;
     const rect = canvas.getBoundingClientRect();
     const x = ev.clientX - rect.left;
     const y = ev.clientY - rect.top;
     let suppressLongPress = false;
     if (pointerDownHandler) {
       suppressLongPress = pointerDownHandler(x, y) === true;
+    }
+    if (suppressLongPress) {
+      pointerCaptured = true; // dragなどの独自処理中はスワイプ遷移を抑止
     }
     if (!suppressLongPress) {
       longPressTimer1 = setTimeout(() => {
@@ -443,7 +448,7 @@
     clearTimeout(longPressTimer2);
 
     const end = { x: ev.clientX, y: ev.clientY, time: Date.now() };
-    if (pointerStart) {
+    if (pointerStart && !pointerCaptured) {
       const dx = end.x - pointerStart.x;
       const dy = end.y - pointerStart.y;
       const dt = end.time - pointerStart.time;
@@ -463,6 +468,7 @@
       pointerUpHandler(end.x - rect.left, end.y - rect.top);
     }
     pointerStart = null;
+    pointerCaptured = false;
   }
 
   function openMenu() {
@@ -500,6 +506,7 @@
     if (pointerUpHandler) {
       pointerUpHandler(-1, -1);
     }
+    pointerCaptured = false;
   });
   canvas.addEventListener('pointermove', (ev) => {
     ev.preventDefault();
